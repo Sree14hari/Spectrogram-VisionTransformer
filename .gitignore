@@ -1,0 +1,5 @@
+*.pth
+melspectrograms_dataset/
+Datasets/
+VoiceDS_SHR/
+Dataset_For_Training/
