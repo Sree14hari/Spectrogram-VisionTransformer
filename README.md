@@ -142,14 +142,4 @@ State your license (e.g. MIT, Apache, etc.)
 
 ```text
 MIT License
-© 2025 Your Name
-```
-
-## References
-
-Include relevant papers or links:
-
-* AST: Audio Spectrogram Transformer ([huggingface.co][2])
-* ASiT: Audio Spectrogram vIsion Transformer ([arXiv][1])
-* Other transformer / spectrogram works
-
+© Sreehari R
