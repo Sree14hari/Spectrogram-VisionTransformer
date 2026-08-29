@@ -1,145 +1,141 @@
 # Spectrogram-VisionTransformer
 
-A project that applies Vision Transformer (ViT) architectures to **spectrograms** for audio / speech tasks (e.g. classification, recognition).  
-Transforms audio signals into spectrogram “images” and uses transformer models to learn from them.
+A research-focused benchmark repository for **voice-disorder classification from spectrograms** using CNN/ViT-family backbones and ensemble strategies.
 
-## Table of Contents
+## 1) Research Objective
 
-- [Introduction](#introduction)  
-- [Features](#features)  
-- [Installation](#installation)  
-- [Usage](#usage)  
-- [Examples](#examples)  
-- [Model / Architecture](#model--architecture)  
-- [Experiments & Results](#experiments--results)  
-- [Dataset](#dataset)  
-- [Training](#training)  
-- [Evaluation](#evaluation)  
-- [Contributing](#contributing)  
-- [License](#license)  
-- [References](#references)  
+This project studies how modern vision architectures perform when trained on spectrogram images derived from pathological voice recordings, with focus on:
 
-## Introduction
+- single-model performance across transformer families,
+- confusion patterns between clinically similar classes,
+- gains from weighted/boosted voting ensembles,
+- representation quality in learned feature space.
 
-Deep learning for audio often uses convolutional networks on spectrogram inputs.  
-This project explores using Vision Transformers (ViT) on spectrograms to capture global patterns and long-range dependencies in time-frequency space.  
+## 2) Dataset and Label Space
 
-The key idea:  
-1. Convert a raw audio waveform → spectrogram (e.g. Mel spectrogram)  
-2. Treat the spectrogram as a 2D image  
-3. Feed patches / tokens into a Transformer / ViT model  
-4. Train / fine-tune for audio tasks (classification, detection, etc.)
+Notebook outputs indicate:
 
-## Features
+- **864 `.wav` files** processed during audio normalization (`dataset.ipynb`),
+- evaluation on a **74-sample test split** (`test.ipynb`),
+- main classification labels used in evaluation reports:
+  - Dysarthia
+  - Laryngitis
+  - Laryngozele
+  - Vox senilis
+  - parkinson
+  - spasmodische_dysphonie
 
-- Pipeline for audio → spectrogram → transformer input  
-- Preprocessing scripts (e.g. STFT, Mel, normalization)  
-- Model architectures based on ViT / Transformer  
-- Training and evaluation scripts  
-- Support for GPU / multi-GPU  
-- Logging, checkpoints, and result saving  
+## 3) Preprocessing Pipeline
 
-## Installation
+Implemented in the data notebooks:
 
-```bash
-# Clone this repository
-git clone https://github.com/Sree14hari/Spectrogram-VisionTransformer.git
-cd Spectrogram-VisionTransformer
+1. Peak normalization (`Datasets/` -> `DatasetNormalized/`)
+2. Silence trimming (`DatasetNormalized/` -> `DatasetTrimmed/`)
+3. Spectrogram generation and split handling (see `data.ipynb`, `dataset.ipynb`)
 
-# (Optional) create virtual environment
-python -m venv venv
-source venv/bin/activate   # or venv\Scripts\activate on Windows
+## 4) Model Families Explored
 
-# Install dependencies
-pip install -r requirements.txt
-````
+- `v1 focal/focal_90.ipynb` (focal-loss-based ViT training)
+- `v2 GFT/GFT.ipynb`
+- `v3 dinov3/dinov3.ipynb`
+- `V5 Eva02/Eva02.ipynb`
+- `v6 maxVit/maxvit.ipynb`
+- `v7 Cait/cait.ipynb`
+- `CNN/cnn.ipynb`
+- `voting.ipynb` (ensemble/stacking/weighted voting)
+- `ablation.ipynb` (ablation and comparative analysis)
 
-You’ll need packages like `torch`, `numpy`, `librosa` (or similar for spectrograms), etc.
+## 5) Reported Metrics (from notebook outputs)
 
-## Usage
+### 5.1 Single-model test accuracies
 
-### Prepare data
+| Model / Notebook | Reported Test Accuracy |
+|---|---:|
+| DinoV3 (`test.ipynb`) | **85.14%** |
+| MaxViT (`test.ipynb`) | **85.14%** |
+| EVA-02 (`test.ipynb`, `V5 Eva02/Eva02.ipynb`) | **77.03%** |
+| CaiT (`v7 Cait/cait.ipynb`) | **81.08%** (also 83.78% in later fine-tuned evaluation cell) |
+| Focal ViT (`v1 focal/focal_90.ipynb`) | **79.73%** (81.08% fine-tuned test report) |
+| GFT (`v2 GFT/GFT.ipynb`) | **62.16%** |
+| Diet (`v4 diet/diet.ipynb`) | **66.22%** (71.62% final fine-tuned test report) |
 
-* Place your audio files / dataset in a folder
-* (Optional) a config or script to convert them into spectrograms
+### 5.2 Ensemble and ablation outcomes
 
-### Train a model
+| Configuration | Reported Accuracy |
+|---|---:|
+| Weighted/boosted voting (`voting.ipynb`) | **86.49%** |
+| Alternative ensemble setting (`voting.ipynb`) | **83.78%** |
+| Ablation best (`ablation.ipynb`) | **86.49%** |
+| Ablation comparison point (`ablation.ipynb`) | **85.14%** |
 
-```bash
-python train.py --config configs/your_config.yaml
-```
+### 5.3 Class-sensitive behavior
 
-### Evaluate or infer
+From `test.ipynb`:
 
-```bash
-python evaluate.py --checkpoint path/to/model.pth --data your_test_data
-```
+- Laryngitis accuracy:
+  - DinoV3: **69.23%**
+  - MaxViT: **69.23%**
+  - EVA-02: **46.15%**
 
-### Example script
+This indicates that class-level robustness, not just overall accuracy, is a key differentiator.
 
-You could include a sample script `run_demo.py` that loads a sample audio, converts to spectrogram, runs through the model, and prints results.
+## 6) Visual Evidence and Analysis Artifacts
 
-## Model / Architecture
+### 6.1 Normalized confusion matrices
 
-Describe the architecture you used:
+### DinoV3
+![DinoV3 Normalized Confusion Matrix](normalized_confusion_matrix_DinoV3_hd.png)
 
-* Patch size (e.g. 16×16)
-* Number of transformer layers / heads / embedding dimension
-* Any modifications you did for spectrogram data (positional embeddings, time-frequency embedding, masking, etc.)
-* Loss functions, regularization, etc.
+### EVA-02
+![EVA-02 Normalized Confusion Matrix](normalized_confusion_matrix_EVA-02_hd.png)
 
-If you adopted or adapted from other works (e.g. `ASiT: Audio Spectrogram vIsion Transformer` ([arXiv][1]) or other similar works), mention it here.
+### MaxViT
+![MaxViT Normalized Confusion Matrix](normalized_confusion_matrix_MaxViT_hd.png)
 
-## Experiments & Results
+### 6.2 Final ensemble confusion matrix
 
-Provide a table of your experiments, for example:
+![Final Normalized Confusion Matrix](final_normalized_confusion_matrix.png)
 
-| Task / Dataset  | Model Variant | Accuracy / Metric | Notes           |
-| --------------- | ------------- | ----------------- | --------------- |
-| Speech Commands | ViT-base      | 95.6%             | baseline        |
-| Your dataset    | Your model    | XX.X%             | your experiment |
+### 6.3 Feature-space visualizations (t-SNE)
 
-Include charts, loss curves, confusion matrices, etc.
+![Meta-feature t-SNE](tsne_meta_features.png)
 
-## Dataset
+Additional figure assets are available under:
 
-Describe the dataset(s) you used:
+- `/images/`
+- `/V5 Eva02/`
+- model folders (`v1 focal/`, `v3 dinov3/`, `v4 diet/`, `v6 maxVit/`)
 
-* Name (e.g. Speech Commands, ESC-50, custom)
-* Number of classes
-* Preprocessing (sampling rate, window size, overlap, normalization)
-* Train / val / test splits
+## 7) Key Findings
 
-## Training
+1. **Strongest single models** in current logged runs are DinoV3 and MaxViT at ~85.14%.
+2. **Ensembling improves peak performance** to **86.49%**, outperforming single-backbone runs.
+3. **Class-specific difficulty remains**, especially for Laryngitis in some backbones.
+4. The repository includes both **quantitative** (accuracy/confusion) and **qualitative** (t-SNE/feature-space) evidence suitable for research reporting.
 
-Detail your training settings, e.g.:
+## 8) Reproducibility Notes
 
-* Learning rate, scheduler
-* Batch size
-* Number of epochs
-* Optimizer (Adam, SGD, etc.)
-* Data augmentation (if any)
-* Hardware setup
+Primary experimentation is notebook-driven. To reproduce reported outputs, execute notebooks in this approximate order:
 
-## Evaluation
+1. `dataset.ipynb` / `data.ipynb` (data preparation)
+2. model notebooks (`v1`, `v2`, `v3`, `V5`, `v6`, `v7`, `CNN`)
+3. `test.ipynb` (cross-model evaluation)
+4. `voting.ipynb` and `ablation.ipynb` (ensemble + ablation)
+5. `scatter.ipynb` / `visual.ipynb` (representation analysis)
 
-* How metrics are computed (accuracy, F1, AUC, etc.)
-* Any special evaluation scripts
-* How to reproduce results
+## 9) Repository Figure Index (quick access)
 
-## Contributing
+- `final_normalized_confusion_matrix.png`
+- `normalized_confusion_matrix_DinoV3_hd.png`
+- `normalized_confusion_matrix_EVA-02_hd.png`
+- `normalized_confusion_matrix_MaxViT_hd.png`
+- `tsne_meta_features.png`
+- `images/final_confusion_matrix.png`
+- `images/final_confusion_matrix_corrected.png`
+- `images/tsne_feature_space.png`
+- `images/tsne_feature_space_eva02.png`
+- `images/tsne_feature_space_maxvit.png`
 
-If you welcome contributions, you can say:
+---
 
-* Please open issues or pull requests
-* Follow the code style
-* Add tests / documentation
-* Cite your work
-
-## License
-
-State your license (e.g. MIT, Apache, etc.)
-
-```text
-MIT License
-© Sreehari R
+If you want, this README can be extended further with a strict paper format (Abstract, Methods, Results, Threats to Validity, and References) and per-class metric tables exported directly from notebook classification reports.
