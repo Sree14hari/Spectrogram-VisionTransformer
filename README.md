@@ -136,6 +136,3 @@ Primary experimentation is notebook-driven. To reproduce reported outputs, execu
 - `images/tsne_feature_space_eva02.png`
 - `images/tsne_feature_space_maxvit.png`
 
----
-
-If you want, this README can be extended further with a strict paper format (Abstract, Methods, Results, Threats to Validity, and References) and per-class metric tables exported directly from notebook classification reports.
